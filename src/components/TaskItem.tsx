@@ -1,13 +1,29 @@
-type TaskStatus = 'pending' | 'completed';
+import type { Task } from '../models/task.interface';
 
 interface TaskItemProps {
-  title: string;
-  status: TaskStatus;
+  task: Task;
 }
 
-export function TaskItem({ title, status }: TaskItemProps) {
+function formatTaskDate(value: string): string {
+  const date = new Date(value);
+  return new Intl.DateTimeFormat('es-MX', {
+    dateStyle: 'medium',
+  }).format(date);
+}
+
+export function TaskItem({
+  task,
+}: TaskItemProps) {
+  const {
+    title,
+    status,
+    updatedAt,
+  } = task;
+
   const statusLabel =
-    status === 'completed' ? 'Completada' : 'Pendiente';
+    status === 'completed'
+      ? 'Completada'
+      : 'Pendiente';
 
   return (
     <article
@@ -15,19 +31,37 @@ export function TaskItem({ title, status }: TaskItemProps) {
       role="listitem"
     >
       <div className="task-item__content">
-        <h3 className="task-item__title">{title}</h3>
-        <span className={`status-badge status-badge--${status}`}>
+        <h3 className="task-item__title">
+          {title}
+        </h3>
+        <span
+          className={`status-badge status-badge--${status}`}
+        >
           {statusLabel}
         </span>
+        <p className="task-item__date">
+          Actualizada:{' '}
+          <time dateTime={updatedAt}>
+            {formatTaskDate(updatedAt)}
+          </time>
+        </p>
       </div>
       <div
         className="task-item__actions"
         role="group"
         aria-label={`Acciones para ${title}`}
       >
-        <button type="button" disabled>Cambiar estado</button>
-        <button type="button" disabled>Editar</button>
-        <button type="button" className="button-danger" disabled>
+        <button type="button" disabled>
+          Cambiar estado
+        </button>
+        <button type="button" disabled>
+          Editar
+        </button>
+        <button
+          type="button"
+          className="button-danger"
+          disabled
+        >
           Eliminar
         </button>
       </div>
