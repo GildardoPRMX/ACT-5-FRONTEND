@@ -5,6 +5,7 @@ import { TaskFilters } from './components/TaskFilters';
 import { TaskForm } from './components/TaskForm';
 import { TaskList } from './components/TaskList';
 import { TaskSummary } from './components/TaskSummary';
+import { TaskActions } from './components/TaskActions';
 import { tasks as initialTasks } from './data/tasks';
 import type { Task } from './models/task.interface';
 
@@ -91,6 +92,28 @@ export default function App() {
     );
   }
 
+  const completedCount = tasks.filter(
+    (task) => task.status === 'completed',
+  ).length;
+
+  function handleClearCompleted() {
+    if (completedCount === 0) {
+      return;
+    }
+
+    const shouldClear = window.confirm(
+      `¿Eliminar las ${completedCount} tareas completadas?`,
+    );
+
+    if (!shouldClear) {
+      return;
+    }
+
+    setTasks((currentTasks) =>
+      currentTasks.filter((task) => task.status !== 'completed'),
+    );
+  }
+
   return (
     <div className="app-shell">
       <AppHeader />
@@ -98,6 +121,10 @@ export default function App() {
         <TaskForm onAddTask={handleAddTask} />
         <TaskFilters />
         <TaskSummary tasks={tasks} />
+        <TaskActions
+          completedCount={completedCount}
+          onClearCompleted={handleClearCompleted}
+        />
         <TaskList
           tasks={tasks}
           onToggleStatus={handleToggleStatus}
