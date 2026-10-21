@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { AppHeader } from './components/AppHeader';
 import { AppFooter } from './components/AppFooter';
 import { TaskFilters } from './components/TaskFilters';
@@ -8,11 +8,43 @@ import { TaskSummary } from './components/TaskSummary';
 import { TaskActions } from './components/TaskActions';
 import { tasks as initialTasks } from './data/tasks';
 import type { Task } from './models/task.interface';
+import type {
+  TaskFilter,
+  TaskSort,
+} from './models/task-view.types';
+import { getVisibleTasks } from './services/task-query.service';
+import {
+  loadTasks,
+  saveTasks,
+} from './services/task-storage.service';
 
 export default function App() {
-  const [tasks, setTasks] = useState<Task[]>(
-    () => [...initialTasks],
+  const [tasks, setTasks] = useState<Task[]>(() =>
+    loadTasks(initialTasks),
   );
+  const [query, setQuery] = useState('');
+  const [filter, setFilter] = useState<TaskFilter>('all');
+  const [sortBy, setSortBy] = useState<TaskSort>('updated-desc');
+  const [currentPage, setCurrentPage] = useState(1);
+
+  useEffect(() => {
+    saveTasks(tasks);
+  }, [tasks]);
+
+  const visibleTasks = getVisibleTasks(tasks, {
+    query,
+    filter,
+    sortBy,
+  });
+  const hasActiveCriteria = query.trim() !== '' || filter !== 'all';
+  const emptyMessage = hasActiveCriteria
+    ? 'No hay tareas que coincidan con la búsqueda y el filtro.'
+    : 'Utiliza el formulario para registrar una nueva actividad.';
+  const pageSize = 5;
+  const totalPages = Math.max(1, Math.ceil(visibleTasks.length / pageSize));
+  const currentVisiblePage = Math.min(currentPage, totalPages);
+  const startIndex = (currentVisiblePage - 1) * pageSize;
+  const paginatedTasks = visibleTasks.slice(startIndex, startIndex + pageSize);
 
   function handleAddTask(title: string) {
     const now = new Date().toISOString();
@@ -28,6 +60,7 @@ export default function App() {
       newTask,
       ...currentTasks,
     ]);
+    setCurrentPage(1);
   }
 
   function handleToggleStatus(id: string) {
@@ -49,6 +82,7 @@ export default function App() {
         };
       }),
     );
+    setCurrentPage(1);
   }
 
   function handleEditTask(
@@ -68,6 +102,7 @@ export default function App() {
           : task,
       ),
     );
+    setCurrentPage(1);
   }
 
   function handleDeleteTask(id: string) {
@@ -90,6 +125,29 @@ export default function App() {
     setTasks((currentTasks) =>
       currentTasks.filter((task) => task.id !== id),
     );
+    setCurrentPage(1);
+  }
+
+  function handleQueryChange(value: string) {
+    setQuery(value);
+    setCurrentPage(1);
+  }
+
+  function handleFilterChange(value: TaskFilter) {
+    setFilter(value);
+    setCurrentPage(1);
+  }
+
+  function handleSortChange(value: TaskSort) {
+    setSortBy(value);
+    setCurrentPage(1);
+  }
+
+  function handleClearCriteria() {
+    setQuery('');
+    setFilter('all');
+    setSortBy('updated-desc');
+    setCurrentPage(1);
   }
 
   const completedCount = tasks.filter(
@@ -112,6 +170,7 @@ export default function App() {
     setTasks((currentTasks) =>
       currentTasks.filter((task) => task.status !== 'completed'),
     );
+    setCurrentPage(1);
   }
 
   return (
@@ -119,18 +178,52 @@ export default function App() {
       <AppHeader />
       <main className="app-main">
         <TaskForm onAddTask={handleAddTask} />
-        <TaskFilters />
+        <TaskFilters
+          query={query}
+          filter={filter}
+          sortBy={sortBy}
+          resultCount={visibleTasks.length}
+          onQueryChange={handleQueryChange}
+          onFilterChange={handleFilterChange}
+          onSortChange={handleSortChange}
+          onClear={handleClearCriteria}
+        />
         <TaskSummary tasks={tasks} />
         <TaskActions
           completedCount={completedCount}
           onClearCompleted={handleClearCompleted}
         />
         <TaskList
-          tasks={tasks}
+          tasks={paginatedTasks}
+          totalCount={visibleTasks.length}
+          emptyMessage={emptyMessage}
           onToggleStatus={handleToggleStatus}
           onEditTask={handleEditTask}
           onDeleteTask={handleDeleteTask}
         />
+        <nav className="pagination" aria-label="Paginación de tareas">
+          <button
+            type="button"
+            onClick={() =>
+              setCurrentPage((page) => Math.max(1, page - 1))
+            }
+            disabled={currentVisiblePage === 1}
+          >
+            Anterior
+          </button>
+          <p aria-live="polite">
+            Página {currentVisiblePage} de {totalPages}
+          </p>
+          <button
+            type="button"
+            onClick={() =>
+              setCurrentPage((page) => Math.min(totalPages, page + 1))
+            }
+            disabled={currentVisiblePage === totalPages}
+          >
+            Siguiente
+          </button>
+        </nav>
       </main>
       <AppFooter courseName="Diseño Frontend con Frameworks" />
     </div>

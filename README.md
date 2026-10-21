@@ -1,65 +1,46 @@
-# Administrador de tareas - Frontend
+# Administrador de tareas Frontend
 
 Aplicación desarrollada con React, TypeScript, Vite y PNPM.
 
-## Alcance actual
+## Funciones actuales
 
-La aplicación administra una colección local de tareas mediante estado de React. Actualmente permite:
-
-- Registrar tareas.
-- Consultar la colección.
-- Completar y reabrir tareas.
-- Editar títulos.
-- Cancelar una edición.
-- Eliminar con confirmación.
-- Calcular el resumen automáticamente.
-- Mostrar una colección vacía.
-
-Los cambios permanecen en memoria y se reinician al recargar.
-
-## Operaciones CRUD
-
-- Create: registro mediante el formulario.
-- Read: renderizado de la colección.
-- Update: cambio de estado y edición.
-- Delete: eliminación confirmada.
-
-## Tecnologías
-
-- React
-- TypeScript
-- Vite
-- PNPM
-- CSS
-- Git y GitHub
-
-## Instalación
-
-```bash
-pnpm install
-```
+- Operaciones CRUD de tareas.
+- Validación reutilizable al registrar y editar títulos.
+- Mensajes de validación accesibles.
+- Búsqueda normalizada por título.
+- Filtros por estado.
+- Orden por actualización, creación o título.
+- Resumen general calculado a partir de todas las tareas.
+- Paginación local de cinco resultados por página.
+- Persistencia mediante `localStorage`.
+- Recuperación segura ante datos locales inválidos.
+- Limpieza masiva de tareas completadas con confirmación.
+- Interfaz adaptable a pantallas estrechas.
 
 ## Ejecución
 
 ```bash
+pnpm install
 pnpm dev
 ```
 
-## Validación
+## Validación técnica
 
 ```bash
 pnpm lint
 pnpm build
 ```
 
+## Alcance
+
+Esta versión guarda las tareas en el almacenamiento local del navegador. Los criterios de consulta y la página actual se reinician al recargar. La conexión con la API REST se realizará en el EC3.
+
 ## Estructura principal
 
-- components: componentes visuales.
-- data: colección local de tareas.
-- models: tipos e interfaces.
-- styles: estilos globales.
-- docs: preguntas y documentación.
-
-## Desafío individual
-
-Componente `TaskActions` para eliminar en bloque todas las tareas completadas previa confirmación del usuario.
+- `src/components`: componentes de interfaz.
+- `src/data`: tareas iniciales de respaldo.
+- `src/models`: modelos y tipos de consulta.
+- `src/services`: búsqueda, filtros, ordenamiento y persistencia local.
+- `src/utils`: reglas reutilizables de validación.
+- `src/styles`: estilos globales y adaptables.
+- `docs`: preguntas de cierre y documentación.
