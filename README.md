@@ -4,6 +4,8 @@ Aplicación desarrollada con React, TypeScript, Vite y PNPM.
 
 ## Funciones actuales
 
+- Navegación SPA con React Router 7.18.4.
+- Página de inicio, administración, detalle dinámico y ruta 404.
 - Operaciones CRUD de tareas.
 - Validación reutilizable al registrar y editar títulos.
 - Mensajes de validación accesibles.
@@ -31,9 +33,18 @@ pnpm lint
 pnpm build
 ```
 
+## Rutas
+
+- `/`: inicio y resumen de tareas.
+- `/tasks`: administración de la colección.
+- `/tasks/:taskId`: detalle de una tarea.
+- `*`: página para direcciones inexistentes.
+
+La búsqueda se conserva en el parámetro `q` de la URL.
+
 ## Alcance
 
-Esta versión guarda las tareas en el almacenamiento local del navegador. Los criterios de consulta y la página actual se reinician al recargar. La conexión con la API REST se realizará en el EC3.
+Esta versión guarda las tareas en el almacenamiento local del navegador. La conexión con la API REST se realizará en la actividad 10.
 
 ## Estructura principal
 

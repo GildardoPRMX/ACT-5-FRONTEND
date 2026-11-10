@@ -1,28 +1,30 @@
 import { useEffect, useState } from 'react';
-import { AppHeader } from './components/AppHeader';
-import { AppFooter } from './components/AppFooter';
-import { TaskFilters } from './components/TaskFilters';
-import { TaskForm } from './components/TaskForm';
-import { TaskList } from './components/TaskList';
-import { TaskSummary } from './components/TaskSummary';
-import { TaskActions } from './components/TaskActions';
+import { Route, Routes, useSearchParams } from 'react-router';
 import { tasks as initialTasks } from './data/tasks';
+import { AppLayout } from './layouts/AppLayout';
 import type { Task } from './models/task.interface';
 import type {
   TaskFilter,
   TaskSort,
 } from './models/task-view.types';
+import { HomePage } from './pages/HomePage';
+import { NotFoundPage } from './pages/NotFoundPage';
+import { TaskDetailPage } from './pages/TaskDetailPage';
+import { TasksPage } from './pages/TasksPage';
 import { getVisibleTasks } from './services/task-query.service';
 import {
   loadTasks,
   saveTasks,
 } from './services/task-storage.service';
 
+const PAGE_SIZE = 5;
+
 export default function App() {
   const [tasks, setTasks] = useState<Task[]>(() =>
     loadTasks(initialTasks),
   );
-  const [query, setQuery] = useState('');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const query = searchParams.get('q') ?? '';
   const [filter, setFilter] = useState<TaskFilter>('all');
   const [sortBy, setSortBy] = useState<TaskSort>('updated-desc');
   const [currentPage, setCurrentPage] = useState(1);
@@ -40,13 +42,10 @@ export default function App() {
   const emptyMessage = hasActiveCriteria
     ? 'No hay tareas que coincidan con la búsqueda y el filtro.'
     : 'Utiliza el formulario para registrar una nueva actividad.';
-  const pageSize = 5;
-  const totalPages = Math.max(1, Math.ceil(visibleTasks.length / pageSize));
+  const totalPages = Math.max(1, Math.ceil(visibleTasks.length / PAGE_SIZE));
   const currentVisiblePage = Math.min(currentPage, totalPages);
-  const startIndex = (currentVisiblePage - 1) * pageSize;
-  const paginatedTasks = visibleTasks.slice(startIndex, startIndex + pageSize);
 
-  function handleAddTask(title: string) {
+  function handleAddTask(title: string): void {
     const now = new Date().toISOString();
     const newTask: Task = {
       id: crypto.randomUUID(),
@@ -56,14 +55,11 @@ export default function App() {
       updatedAt: now,
     };
 
-    setTasks((currentTasks) => [
-      newTask,
-      ...currentTasks,
-    ]);
+    setTasks((currentTasks) => [newTask, ...currentTasks]);
     setCurrentPage(1);
   }
 
-  function handleToggleStatus(id: string) {
+  function handleToggleStatus(id: string): void {
     const now = new Date().toISOString();
 
     setTasks((currentTasks) =>
@@ -74,10 +70,7 @@ export default function App() {
 
         return {
           ...task,
-          status:
-            task.status === 'pending'
-              ? 'completed'
-              : 'pending',
+          status: task.status === 'pending' ? 'completed' : 'pending',
           updatedAt: now,
         };
       }),
@@ -85,33 +78,22 @@ export default function App() {
     setCurrentPage(1);
   }
 
-  function handleEditTask(
-    id: string,
-    title: string,
-  ) {
+  function handleEditTask(id: string, title: string): void {
     const now = new Date().toISOString();
 
     setTasks((currentTasks) =>
       currentTasks.map((task) =>
-        task.id === id
-          ? {
-              ...task,
-              title,
-              updatedAt: now,
-            }
-          : task,
+        task.id === id ? { ...task, title, updatedAt: now } : task,
       ),
     );
     setCurrentPage(1);
   }
 
-  function handleDeleteTask(id: string) {
-    const selectedTask = tasks.find(
-      (task) => task.id === id,
-    );
+  function handleDeleteTask(id: string): boolean {
+    const selectedTask = tasks.find((task) => task.id === id);
 
     if (!selectedTask) {
-      return;
+      return false;
     }
 
     const shouldDelete = window.confirm(
@@ -119,32 +101,43 @@ export default function App() {
     );
 
     if (!shouldDelete) {
-      return;
+      return false;
     }
 
     setTasks((currentTasks) =>
       currentTasks.filter((task) => task.id !== id),
     );
     setCurrentPage(1);
+    return true;
   }
 
-  function handleQueryChange(value: string) {
-    setQuery(value);
+  function handleQueryChange(value: string): void {
+    const nextParams = new URLSearchParams(searchParams);
+
+    if (value === '') {
+      nextParams.delete('q');
+    } else {
+      nextParams.set('q', value);
+    }
+
+    setSearchParams(nextParams, { replace: true });
     setCurrentPage(1);
   }
 
-  function handleFilterChange(value: TaskFilter) {
+  function handleFilterChange(value: TaskFilter): void {
     setFilter(value);
     setCurrentPage(1);
   }
 
-  function handleSortChange(value: TaskSort) {
+  function handleSortChange(value: TaskSort): void {
     setSortBy(value);
     setCurrentPage(1);
   }
 
-  function handleClearCriteria() {
-    setQuery('');
+  function handleClearCriteria(): void {
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.delete('q');
+    setSearchParams(nextParams, { replace: true });
     setFilter('all');
     setSortBy('updated-desc');
     setCurrentPage(1);
@@ -154,7 +147,7 @@ export default function App() {
     (task) => task.status === 'completed',
   ).length;
 
-  function handleClearCompleted() {
+  function handleClearCompleted(): void {
     if (completedCount === 0) {
       return;
     }
@@ -174,58 +167,46 @@ export default function App() {
   }
 
   return (
-    <div className="app-shell">
-      <AppHeader />
-      <main className="app-main">
-        <TaskForm onAddTask={handleAddTask} />
-        <TaskFilters
-          query={query}
-          filter={filter}
-          sortBy={sortBy}
-          resultCount={visibleTasks.length}
-          onQueryChange={handleQueryChange}
-          onFilterChange={handleFilterChange}
-          onSortChange={handleSortChange}
-          onClear={handleClearCriteria}
+    <Routes>
+      <Route element={<AppLayout />}>
+        <Route index element={<HomePage tasks={tasks} />} />
+        <Route
+          path="tasks"
+          element={
+            <TasksPage
+              tasks={tasks}
+              visibleTasks={visibleTasks}
+              query={query}
+              filter={filter}
+              sortBy={sortBy}
+              emptyMessage={emptyMessage}
+              currentPage={currentVisiblePage}
+              pageSize={PAGE_SIZE}
+              completedCount={completedCount}
+              onAddTask={handleAddTask}
+              onQueryChange={handleQueryChange}
+              onFilterChange={handleFilterChange}
+              onSortChange={handleSortChange}
+              onClearCriteria={handleClearCriteria}
+              onClearCompleted={handleClearCompleted}
+              onPageChange={setCurrentPage}
+              onToggleStatus={handleToggleStatus}
+              onEditTask={handleEditTask}
+              onDeleteTask={handleDeleteTask}
+            />
+          }
         />
-        <TaskSummary tasks={tasks} />
-        <TaskActions
-          completedCount={completedCount}
-          onClearCompleted={handleClearCompleted}
+        <Route
+          path="tasks/:taskId"
+          element={
+            <TaskDetailPage
+              tasks={tasks}
+              onDeleteTask={handleDeleteTask}
+            />
+          }
         />
-        <TaskList
-          tasks={paginatedTasks}
-          totalCount={visibleTasks.length}
-          emptyMessage={emptyMessage}
-          onToggleStatus={handleToggleStatus}
-          onEditTask={handleEditTask}
-          onDeleteTask={handleDeleteTask}
-        />
-        <nav className="pagination" aria-label="Paginación de tareas">
-          <button
-            type="button"
-            onClick={() =>
-              setCurrentPage((page) => Math.max(1, page - 1))
-            }
-            disabled={currentVisiblePage === 1}
-          >
-            Anterior
-          </button>
-          <p aria-live="polite">
-            Página {currentVisiblePage} de {totalPages}
-          </p>
-          <button
-            type="button"
-            onClick={() =>
-              setCurrentPage((page) => Math.min(totalPages, page + 1))
-            }
-            disabled={currentVisiblePage === totalPages}
-          >
-            Siguiente
-          </button>
-        </nav>
-      </main>
-      <AppFooter courseName="Diseño Frontend con Frameworks" />
-    </div>
+        <Route path="*" element={<NotFoundPage />} />
+      </Route>
+    </Routes>
   );
 }
