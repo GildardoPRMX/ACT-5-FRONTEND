@@ -5,9 +5,9 @@ interface TaskListProps {
   tasks: Task[];
   totalCount: number;
   emptyMessage: string;
-  onToggleStatus: (id: string) => void;
-  onEditTask: (id: string, title: string) => void;
-  onDeleteTask: (id: string) => boolean;
+  onToggleStatus: (id: string) => Promise<boolean>;
+  onEditTask: (id: string, title: string) => Promise<boolean>;
+  onDeleteTask: (id: string, title: string) => Promise<boolean>;
 }
 
 export function TaskList({

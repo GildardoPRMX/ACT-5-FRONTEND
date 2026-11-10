@@ -520,6 +520,24 @@ input[aria-invalid='true'] {
   font-weight: 600;
 }
 
+.request-message,
+.request-error {
+  padding: 0.9rem 1rem;
+  border-radius: 0.5rem;
+  background: #eff6ff;
+  color: #1e3a8a;
+}
+
+.request-error {
+  border: 1px solid #fecaca;
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+.request-error button {
+  margin-top: 0.5rem;
+}
+
 @media (max-width: 720px) {
   .app-header { padding-block: 2.25rem; }
   .task-form__row,

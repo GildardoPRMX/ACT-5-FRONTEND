@@ -11,9 +11,9 @@ import { formatTaskDate } from '../utils/date';
 
 interface TaskItemProps {
   task: Task;
-  onToggleStatus: (id: string) => void;
-  onEditTask: (id: string, title: string) => void;
-  onDeleteTask: (id: string) => void;
+  onToggleStatus: (id: string) => Promise<boolean>;
+  onEditTask: (id: string, title: string) => Promise<boolean>;
+  onDeleteTask: (id: string, title: string) => Promise<boolean>;
 }
 
 export function TaskItem({
@@ -26,6 +26,7 @@ export function TaskItem({
   const [isEditing, setIsEditing] = useState(false);
   const [draftTitle, setDraftTitle] = useState(title);
   const [error, setError] = useState('');
+  const [isBusy, setIsBusy] = useState(false);
 
   function handleStartEdit() {
     setDraftTitle(title);
@@ -47,9 +48,9 @@ export function TaskItem({
     }
   }
 
-  function handleEditSubmit(
+  async function handleEditSubmit(
     event: FormEvent<HTMLFormElement>,
-  ) {
+  ): Promise<void> {
     event.preventDefault();
 
     const validationMessage = validateTaskTitle(draftTitle);
@@ -59,9 +60,34 @@ export function TaskItem({
       return;
     }
 
-    onEditTask(id, draftTitle.trim());
-    setError('');
-    setIsEditing(false);
+    setIsBusy(true);
+    try {
+      const wasUpdated = await onEditTask(id, draftTitle.trim());
+      if (wasUpdated) {
+        setError('');
+        setIsEditing(false);
+      }
+    } finally {
+      setIsBusy(false);
+    }
+  }
+
+  async function handleToggleStatus(): Promise<void> {
+    setIsBusy(true);
+    try {
+      await onToggleStatus(id);
+    } finally {
+      setIsBusy(false);
+    }
+  }
+
+  async function handleDelete(): Promise<void> {
+    setIsBusy(true);
+    try {
+      await onDeleteTask(id, title);
+    } finally {
+      setIsBusy(false);
+    }
   }
 
   return (
@@ -106,7 +132,9 @@ export function TaskItem({
               </p>
             )}
             <div className="task-item__edit-actions">
-              <button type="submit">Guardar</button>
+              <button type="submit" disabled={isBusy}>
+                {isBusy ? 'Guardando…' : 'Guardar'}
+              </button>
               <button
                 type="button"
                 onClick={handleCancelEdit}
@@ -145,8 +173,8 @@ export function TaskItem({
         )}
         <button
           type="button"
-          onClick={() => onToggleStatus(id)}
-          disabled={isEditing}
+          onClick={() => void handleToggleStatus()}
+          disabled={isEditing || isBusy}
         >
           {status === 'completed'
             ? 'Reabrir'
@@ -155,15 +183,15 @@ export function TaskItem({
         <button
           type="button"
           onClick={handleStartEdit}
-          disabled={isEditing}
+          disabled={isEditing || isBusy}
         >
           Editar
         </button>
         <button
           type="button"
           className="button-danger"
-          onClick={() => onDeleteTask(id)}
-          disabled={isEditing}
+          onClick={() => void handleDelete()}
+          disabled={isEditing || isBusy}
         >
           Eliminar
         </button>

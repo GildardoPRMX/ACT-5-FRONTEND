@@ -1,12 +1,17 @@
 import { Link } from 'react-router';
 import { TaskSummary } from '../components/TaskSummary';
 import type { Task } from '../models/task.interface';
+import type { RequestStatus } from '../models/request-status.type';
 
 interface HomePageProps {
   tasks: Task[];
+  totalCount: number;
+  status: RequestStatus;
+  errorMessage: string;
+  onRetry: () => void;
 }
 
-export function HomePage({ tasks }: HomePageProps) {
+export function HomePage({ tasks, totalCount, status, errorMessage, onRetry }: HomePageProps) {
   return (
     <div className="page-stack">
       <section
@@ -25,7 +30,14 @@ export function HomePage({ tasks }: HomePageProps) {
           </Link>
         </div>
       </section>
-      <TaskSummary tasks={tasks} />
+      {status === 'loading' && <p className="request-message" role="status">Consultando tareas…</p>}
+      {status === 'error' && (
+        <div className="request-error" role="alert">
+          <p>{errorMessage}</p>
+          <button type="button" onClick={onRetry}>Reintentar consulta</button>
+        </div>
+      )}
+      <TaskSummary tasks={tasks} totalCount={totalCount} />
     </div>
   );
 }

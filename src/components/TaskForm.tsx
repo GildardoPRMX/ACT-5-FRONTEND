@@ -6,12 +6,13 @@ import {
 } from '../utils/task-validation';
 
 interface TaskFormProps {
-  onAddTask: (title: string) => void;
+  onAddTask: (title: string) => Promise<boolean>;
 }
 
 export function TaskForm({ onAddTask }: TaskFormProps) {
   const [title, setTitle] = useState('');
   const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   function handleTitleChange(value: string): void {
     setTitle(value);
@@ -21,7 +22,7 @@ export function TaskForm({ onAddTask }: TaskFormProps) {
     }
   }
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>): void {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
 
     const validationMessage = validateTaskTitle(title);
@@ -31,9 +32,16 @@ export function TaskForm({ onAddTask }: TaskFormProps) {
       return;
     }
 
-    onAddTask(title.trim());
-    setTitle('');
-    setError('');
+    setIsSubmitting(true);
+    try {
+      const wasCreated = await onAddTask(title.trim());
+      if (wasCreated) {
+        setTitle('');
+        setError('');
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -63,7 +71,9 @@ export function TaskForm({ onAddTask }: TaskFormProps) {
                 : 'task-title-help'
             }
           />
-          <button type="submit">Agregar tarea</button>
+          <button type="submit" disabled={isSubmitting}>
+            {isSubmitting ? 'Guardando…' : 'Agregar tarea'}
+          </button>
         </div>
         <p id="task-title-help" className="helper-text">
           {title.length}/{TASK_TITLE_MAX_LENGTH} caracteres

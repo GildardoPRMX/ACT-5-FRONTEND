@@ -50,6 +50,7 @@ export function TaskFilters({
             type="search"
             value={query}
             placeholder="Ejemplo: documentación"
+            maxLength={60}
             onChange={(event) => onQueryChange(event.target.value)}
           />
         </label>
@@ -77,8 +78,9 @@ export function TaskFilters({
             }
           >
             <option value="updated-desc">Actualización reciente</option>
-            <option value="created-desc">Creación reciente</option>
+            <option value="updated-asc">Actualización antigua</option>
             <option value="title-asc">Título A a Z</option>
+            <option value="title-desc">Título Z a A</option>
           </select>
         </label>
 

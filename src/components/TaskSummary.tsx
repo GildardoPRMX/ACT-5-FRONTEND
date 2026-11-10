@@ -2,10 +2,12 @@ import type { Task } from '../models/task.interface';
 
 interface TaskSummaryProps {
   tasks: Task[];
+  totalCount: number;
 }
 
 export function TaskSummary({
   tasks,
+  totalCount,
 }: TaskSummaryProps) {
   const completed = tasks.filter(
     ({ status }) => status === 'completed',
@@ -20,17 +22,17 @@ export function TaskSummary({
       aria-label="Resumen de tareas"
     >
       <article className="summary-card">
-        <span>Total</span>
-        <strong>{tasks.length}</strong>
+        <span>Total remoto</span>
+        <strong>{totalCount}</strong>
       </article>
 
       <article className="summary-card">
-        <span>Pendientes</span>
+        <span>Pendientes en página</span>
         <strong>{pending}</strong>
       </article>
 
       <article className="summary-card">
-        <span>Completadas</span>
+        <span>Completadas en página</span>
         <strong>{completed}</strong>
       </article>
     </section>
