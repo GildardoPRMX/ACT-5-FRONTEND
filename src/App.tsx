@@ -1,20 +1,28 @@
 import { useMemo, useState } from 'react';
 import { Route, Routes, useSearchParams } from 'react-router';
+import { useAuth } from './hooks/useAuth';
+import { useTaskList } from './hooks/useTaskList';
 import { AppLayout } from './layouts/AppLayout';
 import type { Task } from './models/task.interface';
 import type { TaskFilter, TaskSort } from './models/task-view.types';
+import type { TaskListQuery } from './models/api.types';
 import { HomePage } from './pages/HomePage';
+import { LoginPage } from './pages/LoginPage';
 import { NotFoundPage } from './pages/NotFoundPage';
+import { ProfilePage } from './pages/ProfilePage';
+import { RegisterPage } from './pages/RegisterPage';
 import { TaskDetailPage } from './pages/TaskDetailPage';
 import { TasksPage } from './pages/TasksPage';
-import { useTaskList } from './hooks/useTaskList';
-import type { TaskListQuery } from './models/api.types';
+import { ProtectedRoute } from './routes/ProtectedRoute';
+import { PublicOnlyRoute } from './routes/PublicOnlyRoute';
 import { getHttpErrorMessage } from './services/http.service';
 import { createTask, deleteTask, updateTask } from './services/task.api.service';
 
 const PAGE_SIZE = 5;
 
 export default function App() {
+  const { accessToken, user, status: authStatus } = useAuth();
+  const taskToken = authStatus === 'authenticated' ? accessToken : null;
   const [searchParams, setSearchParams] = useSearchParams();
   const query = searchParams.get('q') ?? '';
   const [filter, setFilter] = useState<TaskFilter>('all');
@@ -33,16 +41,18 @@ export default function App() {
     ...(normalizedQuery ? { search: normalizedQuery } : {}),
     ...(filter === 'all' ? {} : { status: filter }),
   }), [apiOrder, apiSort, currentPage, filter, normalizedQuery]);
-  const taskList = useTaskList(taskListQuery);
+  const taskList = useTaskList(taskListQuery, taskToken);
   const tasks: Task[] = taskList.data?.data ?? [];
   const meta = taskList.data?.meta;
   const totalCount = meta?.total ?? 0;
   const totalPages = meta?.totalPages ?? 0;
+  const canDelete = user?.role === 'admin';
 
-  async function runMutation(request: () => Promise<unknown>): Promise<boolean> {
+  async function runMutation(request: (token: string) => Promise<unknown>): Promise<boolean> {
+    if (!taskToken) return false;
     setOperationMessage('');
     try {
-      await request();
+      await request(taskToken);
       taskList.reload();
       return true;
     } catch (error) {
@@ -53,27 +63,27 @@ export default function App() {
 
   function handleAddTask(title: string): Promise<boolean> {
     setCurrentPage(1);
-    return runMutation(() => createTask({ title }));
+    return runMutation((token) => createTask({ title }, token));
   }
 
   function handleToggleStatus(id: string): Promise<boolean> {
     const task = tasks.find((currentTask) => currentTask.id === id);
     if (!task) return Promise.resolve(false);
     const status = task.status === 'pending' ? 'completed' : 'pending';
-    return runMutation(() => updateTask(id, { status }));
+    return runMutation((token) => updateTask(id, { status }, token));
   }
 
   function handleEditTask(id: string, title: string): Promise<boolean> {
-    return runMutation(() => updateTask(id, { title }));
+    return runMutation((token) => updateTask(id, { title }, token));
   }
 
   function handleDeleteTask(id: string, title: string): Promise<boolean> {
-    const shouldDelete = window.confirm(`¿Eliminar la tarea "${title}"?`);
-    if (!shouldDelete) return Promise.resolve(false);
+    if (!canDelete) return Promise.resolve(false);
+    if (!window.confirm(`¿Eliminar la tarea "${title}"?`)) return Promise.resolve(false);
     if (tasks.length === 1 && meta?.hasPreviousPage) {
       setCurrentPage((page) => Math.max(1, page - 1));
     }
-    return runMutation(() => deleteTask(id));
+    return runMutation((token) => deleteTask(id, token));
   }
 
   function handleQueryChange(value: string): void {
@@ -111,57 +121,49 @@ export default function App() {
   return (
     <Routes>
       <Route element={<AppLayout />}>
-        <Route
-          index
-          element={
-            <HomePage
-              tasks={tasks}
-              totalCount={totalCount}
-              status={taskList.status}
-              errorMessage={taskList.errorMessage}
-              onRetry={taskList.reload}
-            />
-          }
-        />
-        <Route
-          path="tasks"
-          element={
-            <TasksPage
-              tasks={tasks}
-              totalCount={totalCount}
-              query={query}
-              filter={filter}
-              sortBy={sortBy}
-              status={taskList.status}
-              errorMessage={taskList.errorMessage}
-              operationMessage={operationMessage}
-              emptyMessage={emptyMessage}
-              currentPage={currentPage}
-              totalPages={totalPages}
-              hasNextPage={meta?.hasNextPage ?? false}
-              hasPreviousPage={meta?.hasPreviousPage ?? false}
-              onAddTask={handleAddTask}
-              onQueryChange={handleQueryChange}
-              onFilterChange={handleFilterChange}
-              onSortChange={handleSortChange}
-              onClearCriteria={handleClearCriteria}
-              onPageChange={setCurrentPage}
-              onToggleStatus={handleToggleStatus}
-              onEditTask={handleEditTask}
-              onDeleteTask={handleDeleteTask}
-              onRetry={taskList.reload}
-            />
-          }
-        />
-        <Route
-          path="tasks/:taskId"
-          element={
-            <TaskDetailPage
-              operationMessage={operationMessage}
-              onDeleteTask={handleDeleteTask}
-            />
-          }
-        />
+        <Route index element={<HomePage />} />
+        <Route element={<PublicOnlyRoute />}>
+          <Route path="login" element={<LoginPage />} />
+          <Route path="register" element={<RegisterPage />} />
+        </Route>
+        <Route element={<ProtectedRoute />}>
+          <Route
+            path="tasks"
+            element={
+              <TasksPage
+                tasks={tasks}
+                totalCount={totalCount}
+                query={query}
+                filter={filter}
+                sortBy={sortBy}
+                status={taskList.status}
+                errorMessage={taskList.errorMessage}
+                operationMessage={operationMessage}
+                emptyMessage={emptyMessage}
+                currentPage={currentPage}
+                totalPages={totalPages}
+                hasNextPage={meta?.hasNextPage ?? false}
+                hasPreviousPage={meta?.hasPreviousPage ?? false}
+                canDelete={canDelete}
+                onAddTask={handleAddTask}
+                onQueryChange={handleQueryChange}
+                onFilterChange={handleFilterChange}
+                onSortChange={handleSortChange}
+                onClearCriteria={handleClearCriteria}
+                onPageChange={setCurrentPage}
+                onToggleStatus={handleToggleStatus}
+                onEditTask={handleEditTask}
+                onDeleteTask={handleDeleteTask}
+                onRetry={taskList.reload}
+              />
+            }
+          />
+          <Route
+            path="tasks/:taskId"
+            element={<TaskDetailPage operationMessage={operationMessage} onDeleteTask={handleDeleteTask} />}
+          />
+          <Route path="profile" element={<ProfilePage />} />
+        </Route>
         <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>

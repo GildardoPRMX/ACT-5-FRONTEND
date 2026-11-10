@@ -20,6 +20,7 @@ interface TasksPageProps {
   totalPages: number;
   hasNextPage: boolean;
   hasPreviousPage: boolean;
+  canDelete: boolean;
   onAddTask: (title: string) => Promise<boolean>;
   onQueryChange: (value: string) => void;
   onFilterChange: (value: TaskFilter) => void;
@@ -46,6 +47,7 @@ export function TasksPage({
   totalPages,
   hasNextPage,
   hasPreviousPage,
+  canDelete,
   onAddTask,
   onQueryChange,
   onFilterChange,
@@ -61,8 +63,8 @@ export function TasksPage({
     <div className="page-stack">
       <section className="page-introduction" aria-labelledby="tasks-page-title">
         <p className="section-heading__eyebrow">Gestión</p>
-        <h2 id="tasks-page-title">Mis tareas</h2>
-        <p>Registra y administra las actividades sincronizadas con la API.</p>
+        <h2 id="tasks-page-title">Tareas</h2>
+        <p>Registra y administra las actividades compartidas sincronizadas con la API.</p>
       </section>
 
       <TaskForm onAddTask={onAddTask} />
@@ -77,6 +79,12 @@ export function TasksPage({
         onClear={onClearCriteria}
       />
       <TaskSummary tasks={tasks} totalCount={totalCount} />
+
+      {!canDelete && (
+        <p className="operation-message" role="status">
+          Eliminar tareas requiere el rol admin. La API valida este permiso.
+        </p>
+      )}
 
       {operationMessage && (
         <p className="request-error" role="alert">{operationMessage}</p>
@@ -96,6 +104,7 @@ export function TasksPage({
         tasks={tasks}
         totalCount={totalCount}
         emptyMessage={status === 'loading' ? 'Cargando resultados…' : emptyMessage}
+        canDelete={canDelete}
         onToggleStatus={onToggleStatus}
         onEditTask={onEditTask}
         onDeleteTask={onDeleteTask}

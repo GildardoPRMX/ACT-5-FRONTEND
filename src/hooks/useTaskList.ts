@@ -12,7 +12,7 @@ interface TaskListState {
   reloadVersion: number;
 }
 
-export function useTaskList(query: TaskListQuery) {
+export function useTaskList(query: TaskListQuery, accessToken: string | null) {
   const [state, setState] = useState<TaskListState>({
     status: 'idle',
     data: null,
@@ -27,12 +27,14 @@ export function useTaskList(query: TaskListQuery) {
   }, []);
 
   useEffect(() => {
+    if (!accessToken) return;
+    const token = accessToken;
     const controller = new AbortController();
     const queryKey = JSON.stringify(query);
 
     async function loadTasks(): Promise<void> {
       try {
-        const result = await listTasks(query, controller.signal);
+        const result = await listTasks(query, token, controller.signal);
         setState({
           status: result.data.length === 0 ? 'empty' : 'success',
           data: result,
@@ -59,16 +61,20 @@ export function useTaskList(query: TaskListQuery) {
     return () => controller.abort();
   }, [
     query,
+    accessToken,
     reloadVersion,
   ]);
 
   const isCurrentRequest =
+    Boolean(accessToken) &&
     state.queryKey === JSON.stringify(query) &&
     state.reloadVersion === reloadVersion;
 
   return {
     ...state,
-    status: isCurrentRequest ? state.status : 'loading',
+    status: !accessToken ? 'idle' : isCurrentRequest ? state.status : 'loading',
+    data: accessToken ? state.data : null,
+    errorMessage: accessToken ? state.errorMessage : '',
     reload,
   };
 }

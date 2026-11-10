@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import type { Task } from '../models/task.interface';
+import { useAuth } from '../hooks/useAuth';
 import { getHttpErrorMessage, isAbortRequest, isHttpError } from '../services/http.service';
 import { getTaskById } from '../services/task.api.service';
 import { formatTaskDate } from '../utils/date';
@@ -23,10 +24,11 @@ interface DetailResult {
 
 export function TaskDetailPage({ operationMessage, onDeleteTask }: TaskDetailPageProps) {
   const { taskId = '' } = useParams<{ taskId: string }>();
+  const { accessToken, user } = useAuth();
   const navigate = useNavigate();
   const [result, setResult] = useState<DetailResult | null>(null);
   const [reloadVersion, setReloadVersion] = useState(0);
-  const currentResult = result?.taskId === taskId && result.reloadVersion === reloadVersion
+  const currentResult = accessToken && result?.taskId === taskId && result.reloadVersion === reloadVersion
     ? result
     : null;
   const status: DetailStatus = currentResult?.status ?? 'loading';
@@ -36,7 +38,8 @@ export function TaskDetailPage({ operationMessage, onDeleteTask }: TaskDetailPag
     const controller = new AbortController();
     async function loadTask(): Promise<void> {
       try {
-        const response = await getTaskById(taskId, controller.signal);
+        if (!accessToken) return;
+        const response = await getTaskById(taskId, accessToken, controller.signal);
         setResult({ taskId, reloadVersion, status: 'success', task: response.data, errorMessage: '' });
       } catch (error) {
         if (isAbortRequest(error)) return;
@@ -48,9 +51,9 @@ export function TaskDetailPage({ operationMessage, onDeleteTask }: TaskDetailPag
       }
     }
 
-    if (taskId) void loadTask();
+    if (taskId && accessToken) void loadTask();
     return () => controller.abort();
-  }, [taskId, reloadVersion]);
+  }, [accessToken, taskId, reloadVersion]);
 
   if (status === 'not-found') {
     return <NotFoundPage title="Tarea no encontrada" message="La tarea solicitada no existe o fue eliminada." />;
@@ -71,6 +74,7 @@ export function TaskDetailPage({ operationMessage, onDeleteTask }: TaskDetailPag
 
   const currentTask = task;
   const statusLabel = task.status === 'completed' ? 'Completada' : 'Pendiente';
+  const canDelete = user?.role === 'admin';
 
   async function handleDeleteTask(): Promise<void> {
     if (await onDeleteTask(currentTask.id, currentTask.title)) {
@@ -89,9 +93,12 @@ export function TaskDetailPage({ operationMessage, onDeleteTask }: TaskDetailPag
         <div><dt>Última actualización</dt><dd><time dateTime={task.updatedAt}>{formatTaskDate(task.updatedAt)}</time></dd></div>
       </dl>
       {operationMessage && <p className="field-error" role="alert">{operationMessage}</p>}
+      {!canDelete && (
+        <p className="operation-message" role="status">Eliminar tareas requiere el rol admin. La API valida este permiso.</p>
+      )}
       <div className="task-detail__actions">
         <Link className="button-link button-link--secondary" to="/tasks">Volver a tareas</Link>
-        <button type="button" className="button-danger" onClick={() => void handleDeleteTask()}>Eliminar tarea</button>
+        {canDelete && <button type="button" className="button-danger" onClick={() => void handleDeleteTask()}>Eliminar tarea</button>}
       </div>
     </article>
   );

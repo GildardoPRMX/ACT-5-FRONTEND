@@ -384,6 +384,61 @@ input[aria-invalid='true'] {
   background: #fff;
 }
 
+.app-navigation-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  width: min(1100px, calc(100% - 2rem));
+  margin: 0 auto;
+}
+
+.session-summary {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  color: #334155;
+  font-weight: 600;
+}
+
+.auth-panel {
+  width: min(100%, 38rem);
+  margin-inline: auto;
+}
+
+.auth-form,
+.form-field {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.auth-form { gap: 1rem; }
+
+.form-field small {
+  color: #475569;
+}
+
+.auth-alternative { margin-bottom: 0; }
+
+.operation-message {
+  padding: 0.8rem 1rem;
+  border-radius: 0.5rem;
+  background: #eff6ff;
+  color: #1e3a8a;
+}
+
+.operation-message--error {
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+.auth-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
 .app-navigation__list {
   display: flex;
   width: min(1100px, calc(100% - 2rem));
@@ -554,6 +609,10 @@ input[aria-invalid='true'] {
     align-items: stretch;
   }
   .app-navigation__link { display: flex; }
+  .app-navigation-bar {
+    align-items: stretch;
+    flex-direction: column;
+  }
   .task-detail__actions {
     flex-direction: column;
     align-items: stretch;

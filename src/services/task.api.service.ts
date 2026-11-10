@@ -29,35 +29,40 @@ function createQueryString(query: TaskListQuery): string {
 
 export function listTasks(
   query: TaskListQuery,
+  accessToken: string,
   signal?: AbortSignal,
 ): Promise<TaskListResponse> {
   return httpRequest<TaskListResponse>(`/tasks?${createQueryString(query)}`, {
     signal,
-  });
+  }, accessToken);
 }
 
 export function getTaskById(
   id: string,
+  accessToken: string,
   signal?: AbortSignal,
 ): Promise<ApiDataResponse<Task>> {
   return httpRequest<ApiDataResponse<Task>>(
     `/tasks/${encodeURIComponent(id)}`,
     { signal },
+    accessToken,
   );
 }
 
 export function createTask(
   input: CreateTaskInput,
+  accessToken: string,
 ): Promise<ApiDataResponse<Task>> {
   return httpRequest<ApiDataResponse<Task>>('/tasks', {
     method: 'POST',
     body: JSON.stringify(input),
-  });
+  }, accessToken);
 }
 
 export function updateTask(
   id: string,
   input: UpdateTaskInput,
+  accessToken: string,
 ): Promise<ApiDataResponse<Task>> {
   return httpRequest<ApiDataResponse<Task>>(
     `/tasks/${encodeURIComponent(id)}`,
@@ -65,11 +70,12 @@ export function updateTask(
       method: 'PATCH',
       body: JSON.stringify(input),
     },
+    accessToken,
   );
 }
 
-export function deleteTask(id: string): Promise<void> {
+export function deleteTask(id: string, accessToken: string): Promise<void> {
   return httpRequest<void>(`/tasks/${encodeURIComponent(id)}`, {
     method: 'DELETE',
-  });
+  }, accessToken);
 }

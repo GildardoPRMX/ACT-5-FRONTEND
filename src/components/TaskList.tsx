@@ -5,6 +5,7 @@ interface TaskListProps {
   tasks: Task[];
   totalCount: number;
   emptyMessage: string;
+  canDelete: boolean;
   onToggleStatus: (id: string) => Promise<boolean>;
   onEditTask: (id: string, title: string) => Promise<boolean>;
   onDeleteTask: (id: string, title: string) => Promise<boolean>;
@@ -14,6 +15,7 @@ export function TaskList({
   tasks,
   totalCount,
   emptyMessage,
+  canDelete,
   onToggleStatus,
   onEditTask,
   onDeleteTask,
@@ -45,6 +47,7 @@ export function TaskList({
             <TaskItem
               key={task.id}
               task={task}
+              canDelete={canDelete}
               onToggleStatus={onToggleStatus}
               onEditTask={onEditTask}
               onDeleteTask={onDeleteTask}

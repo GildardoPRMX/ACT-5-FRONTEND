@@ -14,6 +14,10 @@ Aplicación desarrollada con React, TypeScript, Vite y PNPM.
 - Solicitudes obsoletas canceladas con `AbortController`.
 - Detalle remoto consultado por identificador.
 - Eliminación confirmada antes de llamar al Backend.
+- Registro, inicio y cierre de sesión con restauración mediante `/auth/me`.
+- Rutas protegidas y envío del token Bearer solo a servicios autenticados.
+- Eliminación disponible en la interfaz para el rol `admin`; el permiso se valida en la API.
+- Perfil autenticado con datos del contexto de sesión.
 - Interfaz adaptable a pantallas estrechas.
 
 ## Ejecución
@@ -35,23 +39,28 @@ pnpm build
 
 ## Rutas
 
-- `/`: inicio y resumen de tareas.
-- `/tasks`: administración de la colección.
-- `/tasks/:taskId`: detalle de una tarea.
+- `/`: inicio público o autenticado.
+- `/login` y `/register`: acceso público para visitantes.
+- `/tasks` y `/tasks/:taskId`: rutas protegidas.
+- `/profile`: perfil protegido.
 - `*`: página para direcciones inexistentes.
 
 La búsqueda se conserva en el parámetro `q` de la URL. El cliente HTTP centraliza el manejo de JSON, errores HTTP y respuestas `204`.
 
-## Alcance
+## Sesión
 
-Esta versión obtiene y persiste las tareas en la API REST. La autenticación y las rutas protegidas corresponden a la actividad 11.
+El cliente guarda solo el access token en `sessionStorage` con la clave `task-manager.access-token`. Al recargar, valida la sesión con `/auth/me`; no guarda contraseñas ni el objeto de usuario en Web Storage. El token Bearer permanece accesible para JavaScript, así que esta persistencia didáctica no protege contra XSS. La API sigue siendo la autoridad de autenticación y permisos.
+
+Las tareas siguen siendo una colección compartida, no se atribuyen a una cuenta particular. Solo `admin` ve la opción Eliminar; el Backend debe seguir rechazando con 403 cualquier solicitud de borrado no autorizada.
 
 ## Estructura principal
 
 - `src/components`: componentes de interfaz.
 - `src/config`: configuración pública del cliente.
+- `src/context` y `src/providers`: estado de sesión compartido.
 - `src/hooks`: sincronización de consultas remotas y cancelación.
 - `src/models`: modelos y contratos HTTP.
+- `src/routes`: guardas de navegación.
 - `src/services`: cliente HTTP y operaciones de tareas.
 - `src/utils`: reglas reutilizables de validación.
 - `src/styles`: estilos globales y adaptables.

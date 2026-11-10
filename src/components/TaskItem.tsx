@@ -11,6 +11,7 @@ import { formatTaskDate } from '../utils/date';
 
 interface TaskItemProps {
   task: Task;
+  canDelete: boolean;
   onToggleStatus: (id: string) => Promise<boolean>;
   onEditTask: (id: string, title: string) => Promise<boolean>;
   onDeleteTask: (id: string, title: string) => Promise<boolean>;
@@ -18,6 +19,7 @@ interface TaskItemProps {
 
 export function TaskItem({
   task,
+  canDelete,
   onToggleStatus,
   onEditTask,
   onDeleteTask,
@@ -94,6 +96,7 @@ export function TaskItem({
     <article
       className={`task-item task-item--${status}`}
       role="listitem"
+      aria-busy={isBusy}
     >
       <div className="task-item__content">
         {isEditing ? (
@@ -187,14 +190,16 @@ export function TaskItem({
         >
           Editar
         </button>
-        <button
-          type="button"
-          className="button-danger"
-          onClick={() => void handleDelete()}
-          disabled={isEditing || isBusy}
-        >
-          Eliminar
-        </button>
+        {canDelete && (
+          <button
+            type="button"
+            className="button-danger"
+            onClick={() => void handleDelete()}
+            disabled={isEditing || isBusy}
+          >
+            Eliminar
+          </button>
+        )}
       </div>
     </article>
   );

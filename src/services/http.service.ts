@@ -9,6 +9,17 @@ interface HttpErrorOptions {
   requestId?: string;
 }
 
+type UnauthorizedHandler = () => void;
+
+let unauthorizedHandler: UnauthorizedHandler | undefined;
+
+export function setUnauthorizedHandler(handler: UnauthorizedHandler): () => void {
+  unauthorizedHandler = handler;
+  return () => {
+    if (unauthorizedHandler === handler) unauthorizedHandler = undefined;
+  };
+}
+
 export class HttpError extends Error {
   readonly status: number;
   readonly code: string;
@@ -38,19 +49,23 @@ function isApiErrorBody(value: unknown): value is ApiErrorBody {
     typeof value.error.message === 'string';
 }
 
-function isAbortError(error: unknown): boolean {
+function isAbortErrorInternal(error: unknown): boolean {
   return error instanceof DOMException && error.name === 'AbortError';
 }
 
 export async function httpRequest<T>(
   path: string,
   init: RequestInit = {},
+  accessToken?: string,
 ): Promise<T> {
   const headers = new Headers(init.headers);
   headers.set('Accept', 'application/json');
 
   if (init.body !== undefined && !headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json');
+  }
+  if (accessToken) {
+    headers.set('Authorization', `Bearer ${accessToken}`);
   }
 
   try {
@@ -79,6 +94,10 @@ export async function httpRequest<T>(
     }
 
     if (!response.ok) {
+      if (response.status === 401 && accessToken) {
+        unauthorizedHandler?.();
+      }
+
       if (isApiErrorBody(payload)) {
         throw new HttpError({
           status: response.status,
@@ -98,7 +117,7 @@ export async function httpRequest<T>(
 
     return payload as T;
   } catch (error) {
-    if (error instanceof HttpError || isAbortError(error)) {
+    if (error instanceof HttpError || isAbortErrorInternal(error)) {
       throw error;
     }
 
@@ -111,7 +130,11 @@ export async function httpRequest<T>(
 }
 
 export function isAbortRequest(error: unknown): boolean {
-  return isAbortError(error);
+  return isAbortErrorInternal(error);
+}
+
+export function isAbortError(error: unknown): boolean {
+  return isAbortErrorInternal(error);
 }
 
 export function isHttpError(error: unknown): error is HttpError {
