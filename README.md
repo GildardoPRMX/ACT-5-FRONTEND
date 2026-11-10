@@ -18,6 +18,9 @@ Aplicación desarrollada con React, TypeScript, Vite y PNPM.
 - Rutas protegidas y envío del token Bearer solo a servicios autenticados.
 - Eliminación disponible en la interfaz para el rol `admin`; el permiso se valida en la API.
 - Perfil autenticado con datos del contexto de sesión.
+- Nueve pruebas automatizadas de sesión, rutas y cliente HTTP.
+- Configuración Render para sitio estático y fallback SPA.
+- Prueba de humo HTTPS para el Frontend y salud del Backend.
 - Interfaz adaptable a pantallas estrechas.
 
 ## Ejecución
@@ -34,8 +37,12 @@ El archivo `.env.local` debe contener `VITE_API_URL=/api`. El proxy de Vite env�
 
 ```bash
 pnpm lint
+pnpm test
 pnpm build
+pnpm verify
 ```
+
+`pnpm test:watch` ejecuta Vitest en modo interactivo. `pnpm smoke:production` requiere `FRONTEND_URL` y `BACKEND_URL` HTTPS configuradas en el entorno.
 
 ## Rutas
 
@@ -52,6 +59,10 @@ La búsqueda se conserva en el parámetro `q` de la URL. El cliente HTTP central
 El cliente guarda solo el access token en `sessionStorage` con la clave `task-manager.access-token`. Al recargar, valida la sesión con `/auth/me`; no guarda contraseñas ni el objeto de usuario en Web Storage. El token Bearer permanece accesible para JavaScript, así que esta persistencia didáctica no protege contra XSS. La API sigue siendo la autoridad de autenticación y permisos.
 
 Las tareas siguen siendo una colección compartida, no se atribuyen a una cuenta particular. Solo `admin` ve la opción Eliminar; el Backend debe seguir rechazando con 403 cualquier solicitud de borrado no autorizada.
+
+## Despliegue
+
+`render.yaml` prepara un sitio estático en Render, publica `dist`, ejecuta `pnpm verify`, reescribe rutas SPA hacia `/index.html` y configura `VITE_API_URL` como valor de entorno. La URL HTTPS del Backend y `CORS_ORIGIN` deben configurarse con el origen final correspondiente. Esta rama contiene la preparación; no se creó un servicio Render ni se etiquetó `v1.0.0` porque faltan las URLs de producción y el Backend A12 compatible. Consulta [la matriz de despliegue](docs/deployment-configuration.md) y [la lista de liberación](docs/release-checklist.md).
 
 ## Estructura principal
 
